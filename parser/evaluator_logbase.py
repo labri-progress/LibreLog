@@ -191,32 +191,7 @@ def evaluate_logbase_result(
     else:
         df_parsedlog = pd.read_csv(sorted_file, usecols=column_names, dtype=str)
         print("df_parsedlog sorted file loaded! ", flush=True)
-
-    df_parsedlog["RegexTemplate_NoSpaces_NoVar_cleaned"] = df_parsedlog[
-        "RegexTemplate"
-    ].apply(accuracy.clean_regex_content)
-    print("df_parsedlog RegexTemplate ready to be checked", flush=True)
-    df_gtlog["EventTemplate_NoSpaces_NoVar_cleaned"] = df_gtlog["EventTemplate"].apply(
-        accuracy.clean_content
-    )
-    print("df_gtlog EventTemplate ready to be checked", flush=True)
-
-    correctly_parsed_messages = df_parsedlog[
-        "RegexTemplate_NoSpaces_NoVar_cleaned"
-    ].eq(df_gtlog["EventTemplate_NoSpaces_NoVar_cleaned"]).sum()
-    pa = float(correctly_parsed_messages) / len(df_parsedlog[["Content"]])
-    print(f"PA: {pa}", flush=True)
-
-    df_parsedlog.to_csv("parsedlog_for_accuracy.csv")
-    df_gtlog.to_csv("gtlog_for_accuracy.csv")
-
-    (_, _, _, ga) = accuracy.get_accuracy(
-        df_gtlog["EventId"], df_parsedlog["RegexTemplate_NoSpaces_NoVar_cleaned"]
-    )
-    print(f"GA: {ga}", flush=True)
-
-    event_count = str(df_parsedlog["RegexTemplate_NoSpaces_NoVar_cleaned"].nunique())
-    return ga, pa, event_count
+    return accuracy.evaluate_result_dataframes(df_parsedlog, df_gtlog)
 
 
 if __name__ == "__main__":

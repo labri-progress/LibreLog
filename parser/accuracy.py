@@ -1,6 +1,56 @@
 import re
 import pandas as pd
 import numpy as np
+import llama_parser
+import contextlib
+import io
+
+
+_REGEX_CONVERTER = None
+
+
+def _get_regex_converter():
+    global _REGEX_CONVERTER
+    if _REGEX_CONVERTER is None:
+        # No model pipeline is needed for template normalization utilities.
+        with contextlib.redirect_stdout(io.StringIO()):
+            _REGEX_CONVERTER = llama_parser.LogParser(
+                pipeline=None,
+                regex_manager1=None,
+                model="Meta-Llama-3-8B-Instruct",
+                regex_sample=1,
+                similarity="jaccard",
+                do_self_reflection="False",
+            )
+    return _REGEX_CONVERTER
+
+
+def canonicalize_regex(regex):
+    if not regex:
+        return ""
+    regex = regex.strip()
+    if regex.startswith("^"):
+        regex = regex[1:]
+    if regex.endswith("$"):
+        regex = regex[:-1]
+    regex = regex.replace("\\ ", " ")
+    regex = re.sub(r"\s+", " ", regex)
+    return regex.strip()
+
+
+def template_to_normalized_regex(template):
+    if pd.isna(template):
+        return ""
+    converter = _get_regex_converter()
+    regex = converter.template_to_regex(str(template))
+    return canonicalize_regex(converter.clean_regex(log=None, regex=regex))
+
+
+def normalize_parsed_regex(regex):
+    if pd.isna(regex):
+        return ""
+    converter = _get_regex_converter()
+    return canonicalize_regex(converter.clean_regex(log=None, regex=str(regex)))
 
 
 def sort_csv_by_content_order(file1_df, file2_df, to_file, save_sorted=False):
@@ -43,6 +93,40 @@ def get_accuracy(series_groundtruth, series_parsedlog, debug=False):
     accuracy = float(accurate_events) / series_groundtruth.size
     return precision, recall, f_measure, accuracy
 
+def evaluate_result_dataframes(df_parsedlog, df_gtlog):
+    df_parsedlog = df_parsedlog.copy()
+    df_gtlog = df_gtlog.copy()
+
+    df_parsedlog["RegexTemplate_Normalized"] = df_parsedlog["RegexTemplate"].apply(
+        normalize_parsed_regex
+    )
+    print("df_parsedlog RegexTemplate normalized", flush=True)
+    df_gtlog["EventTemplate_Normalized"] = df_gtlog["EventTemplate"].apply(
+        template_to_normalized_regex
+    )
+    print("df_gtlog EventTemplate normalized to regex", flush=True)
+
+    df_parsedlog.to_csv("../df_parsedlog_normalized.csv", index=False)
+    df_gtlog.to_csv("../df_gtlog_normalized.csv", index=False)
+
+    correctly_parsed_messages = df_parsedlog["RegexTemplate_Normalized"].eq(
+        df_gtlog["EventTemplate_Normalized"]
+    ).sum()
+    PA = float(correctly_parsed_messages) / len(df_parsedlog[["Content"]])
+    print(f"PA: {PA}", flush=True)
+
+    (precision, recall, f_measure, GA) = get_accuracy(
+        df_gtlog["EventId"], df_parsedlog["RegexTemplate_Normalized"]
+    )
+    print(f"GA: {GA}", flush=True)
+    event_count = str(df_parsedlog["RegexTemplate_Normalized"].nunique())
+    return (
+        GA,
+        PA,
+        event_count,
+    )
+
+
 def evaluate_result(predic_file, gt_file, sorted_file, save_sorted=False,sort=True):
     column_names = ["Content", "RegexTemplate", "EventId"]
     if sort:
@@ -64,27 +148,7 @@ def evaluate_result(predic_file, gt_file, sorted_file, save_sorted=False,sort=Tr
             gt_file, usecols=["Content", "EventId", "EventTemplate"], dtype=str
         )
         print("df_parsedlog sorted file loaded! ", flush=True)
-    df_parsedlog["RegexTemplate_NoSpaces_NoVar_cleaned"] = df_parsedlog[
-        "RegexTemplate"
-    ].apply(clean_regex_content)
-    print("df_parsedlog RegexTemplate ready to be checked", flush=True)
-    df_gtlog["EventTemplate_NoSpaces_NoVar_cleaned"] = df_gtlog["EventTemplate"].apply(
-        clean_content
-    )
-    print("df_gtlog EventTemplate ready to be checked", flush=True)
-    correctly_parsed_messages = df_parsedlog['RegexTemplate_NoSpaces_NoVar_cleaned'].eq(df_gtlog['EventTemplate_NoSpaces_NoVar_cleaned']).values.sum()
-    PA = float(correctly_parsed_messages) / len(df_parsedlog[['Content']])
-    print(f"PA: {PA}", flush=True)
-    (precision, recall, f_measure, GA) = get_accuracy(
-        df_gtlog["EventId"],df_parsedlog["RegexTemplate_NoSpaces_NoVar_cleaned"]
-    )
-    print(f"GA: {GA}", flush=True)
-    event_count = str(df_parsedlog["RegexTemplate_NoSpaces_NoVar_cleaned"].nunique())
-    return (
-        GA,
-        PA,
-        event_count,
-    )
+    return evaluate_result_dataframes(df_parsedlog, df_gtlog)
     
 def clean_content(content):
     content = content.replace(",", "")
