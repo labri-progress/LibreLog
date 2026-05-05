@@ -52,7 +52,7 @@ def normalize_parsed_regex(regex):
     converter = _get_regex_converter()
     return canonicalize_regex(converter.clean_regex(log=None, regex=str(regex)))
 
-
+# file_df -> parsed log, file2_df -> gt log
 def sort_csv_by_content_order(file1_df, file2_df, to_file, save_sorted=False):
     file1_df_unique = file1_df.drop_duplicates(subset='Content', keep='first')
     merged_df = pd.merge(file2_df[['Content']], file1_df_unique, on='Content', how='left')
@@ -93,7 +93,7 @@ def get_accuracy(series_groundtruth, series_parsedlog, debug=False):
     accuracy = float(accurate_events) / series_groundtruth.size
     return precision, recall, f_measure, accuracy
 
-def evaluate_result_dataframes(df_parsedlog, df_gtlog):
+def evaluate_result_dataframes(df_parsedlog, df_gtlog, sorted_file):
     df_parsedlog = df_parsedlog.copy()
     df_gtlog = df_gtlog.copy()
 
@@ -106,8 +106,9 @@ def evaluate_result_dataframes(df_parsedlog, df_gtlog):
     )
     print("df_gtlog EventTemplate normalized to regex", flush=True)
 
-    df_parsedlog.to_csv("../df_parsedlog_normalized.csv", index=False)
-    df_gtlog.to_csv("../df_gtlog_normalized.csv", index=False)
+    df_debug = pd.concat([df_parsedlog, df_gtlog], axis=1)
+    df_debug['CorrectlyParsed'] = df_debug["RegexTemplate_Normalized"].eq(df_debug["EventTemplate_Normalized"])
+    df_debug.to_csv(sorted_file.parent / "df_parsedlog_gtlog_combined.csv", index=False)
 
     correctly_parsed_messages = df_parsedlog["RegexTemplate_Normalized"].eq(
         df_gtlog["EventTemplate_Normalized"]
@@ -148,7 +149,7 @@ def evaluate_result(predic_file, gt_file, sorted_file, save_sorted=False,sort=Tr
             gt_file, usecols=["Content", "EventId", "EventTemplate"], dtype=str
         )
         print("df_parsedlog sorted file loaded! ", flush=True)
-    return evaluate_result_dataframes(df_parsedlog, df_gtlog)
+    return evaluate_result_dataframes(df_parsedlog, df_gtlog, sorted_file)
     
 def clean_content(content):
     content = content.replace(",", "")

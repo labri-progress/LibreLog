@@ -191,7 +191,7 @@ def evaluate_logbase_result(
     else:
         df_parsedlog = pd.read_csv(sorted_file, usecols=column_names, dtype=str)
         print("df_parsedlog sorted file loaded! ", flush=True)
-    return accuracy.evaluate_result_dataframes(df_parsedlog, df_gtlog)
+    return accuracy.evaluate_result_dataframes(df_parsedlog, df_gtlog, sorted_file)
 
 
 if __name__ == "__main__":
