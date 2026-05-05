@@ -31,10 +31,12 @@ We present LibreLog repository structure below.
 ├── parser
 │   ├── accuracy.py
 │   ├── evaluator.py
+│   ├── evaluator_logbase.py
 │   ├── grouping.py
 │   ├── llama_parser.py
 │   └── regex_manager.py
 ├── parsing.sh
+├── parsing_logbase.sh
 ├── requirements.txt
 └── results
     ├── AEL.csv
@@ -64,26 +66,19 @@ hf download meta-llama/Meta-Llama-3-8B-Instruct --local-dir models/Meta-Llama-3-
 
 ## Datasets download
 
+This fork of LibreLog is able to run on Loghub-2.0 as well as LogBase.
+
 Please first download the full datasets of Loghub-2.0 via [Zenodo](https://zenodo.org/record/8275861) and place it inside the `full_dataset` folder.
+Download also [LogBase](https://doi.org/10.6084/m9.figshare.28815620) and unzip it into a `LogBase` folder.
 
 ## Parsing
 
-Please run the following command to run LibreLog.
+Please run the following command to run LibreLog on Loghub-2.0.
 ```shell
 sh parsing.sh
 ```
 
-## Evaluation Results
-
-### RQ1: What is the effectiveness of LibreLog?
-<p align="center"><img src="evaluation/RQ1/RQ1.png" width="800"></p>
-
-### RQ2: What is the efficiency of LibreLog?
-<p align="center"><img src="evaluation/RQ2/RQ2.png" width="800"></p>
-
-### RQ3: How does different settings impact the result of LibreLog?
-<p align="center"><img src="evaluation/RQ3/RQ3_1.png" width="500"></p>
-<p align="center"><img src="evaluation/RQ3/RQ3_2.png" width="500"></p>
-
-### RQ4: What is the effectiveness of LibreLog with different LLMs?
-<p align="center"><img src="evaluation/RQ4/RQ4.png" width="500"></p>
+Please run the following command to run LibreLog on LogBase.
+```shell
+sh parsing_logbase.sh
+```
