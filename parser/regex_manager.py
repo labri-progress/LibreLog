@@ -44,7 +44,7 @@ class RegexTemplateManager:
 
         if not self.regex_templates:
             self.regex_templates.append(regex_template_tuple)
-            print(f"\nRegex Template is added into manager: {regex_template_tuple}", flush=True)
+            # print(f"\nRegex Template is added into manager: {regex_template_tuple}", flush=True)
             return
 
         insert_index = self.get_index_by_length(word_count)
@@ -53,7 +53,7 @@ class RegexTemplateManager:
             insert_index += 1
 
         self.regex_templates.insert(insert_index, regex_template_tuple)
-        print(f"Regex Template is added into manager: {insert_index}, {regex_template_tuple}", flush=True)
+        # print(f"Regex Template is added into manager: {insert_index}, {regex_template_tuple}", flush=True)
 
     def add_regex_templates(self, regex_templates):
         for regex_template in regex_templates:

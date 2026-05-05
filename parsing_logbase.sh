@@ -1,3 +1,3 @@
 cd parser
 
-uv run evaluator_logbase.py --project "mall"  --sample "3"
+TRANSFORMERS_VERBOSITY=error uv run evaluator_logbase.py --project "nanohttpd"  --sample "3"
